@@ -1,0 +1,36 @@
+<Create/Edit logrotate config for example Asterisk application>
+	• sudo nano /etc/logrotate.d/asterisk
+	• Paste below config configuration:
+	/var/log/asterisk/messages /var/log/asterisk/security /var/log/asterisk/full {
+	    daily
+	    missingok
+	    rotate 180
+	    compress
+	    delaycompress
+	    notifempty
+	    create 0640 asterisk asterisk
+	    sharedscripts
+	    postrotate
+	        /bin/systemctl reload asterisk >/dev/null 2>&1 || true
+	    endscript
+	}
+	
+Explanation for each systax used in file:
+		• daily → rotate logs every day
+		• rotate 180 → keep ~180 days of logs (≈ 6 months), older ones are deleted automatically
+		• compress → gzip older logs
+		• delaycompress → first rotated file isn’t compressed until the next rotation (avoids issues if Asterisk still writes)
+		• notifempty → skip rotation if log is empty
+		• create 0640 asterisk asterisk → create new logs with correct permissions
+		• postrotate → reload Asterisk so it starts writing to the new log files
+		• Missingok → If a log file doesn’t exist, don’t throw an error. Just skip it.
+		
+Test logrotate manually:
+	• sudo logrotate -f /etc/logrotate.d/asterisk
+
+Check if logrotate config is valid:
+	• sudo logrotate --debug /etc/logrotate.d/asterisk
+This will not rotate, but it will show what logrotate would do.
+	
+Automatic scheduling:
+logrotate is already run daily by cron (via /etc/cron.daily/logrotate), so you don’t need to add anything extra.
